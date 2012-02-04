@@ -1,24 +1,32 @@
-## About ##
-The Little MongoDB Book is a free book introducing MongoDB.
+## О переводе ##
 
-The book was written shortly after the creation of the [MongoDB interactive tutorial](http://mongly.com). As such, the two can be seen as complementary.
+Это форк репозитория книги "The Little MongoDB Book" для перевода ее на русский язык.
 
-The book was written by [Karl Seguin](http://openmymind.net), with [Perry Neal](http://twitter.com/perryneal)'s assistance.
+Каталог `en` содержит оригинальный текст, каталог `ru` -- перевод. Буду рад помощи в работе.
 
-If you liked this book, maybe you'll also like [The Little Redis Book](http://openmymind.net/2012/1/23/The-Little-Redis-Book/).
+## О книге ##
 
-## License ##
-The book is freely distributed under the  [Attribution-NonCommercial 3.0 Unported license](<http://creativecommons.org/licenses/by-nc/3.0/legalcode>).
+Маленькая Книга про MongoDB -- это бесплатная книга, представляющая MongoDB.
 
-## Formats ##
-The book is written in [markdown](http://daringfireball.net/projects/markdown/) and converted to PDF using [PanDoc](http://johnmacfarlane.net/pandoc/). A few LaTex specific commands have been placed in the markdown file to help with pdf-generation (namely for the title page and to create page breaks between chapters).
+Эта книга была написана вскоре после создания [Интерактивного курса MongoDB](http://mongly.com). Книга и сайт дополняют друг друга.
 
-The LaTex template makes use of [Lena Herrmann's JavaScript highlighter](http://lenaherrmann.net/2010/05/20/javascript-syntax-highlighting-in-the-latex-listings-package).
+Книгу написал [Karl Seguin](http://openmymind.net), при поддержке [Perry Neal](http://twitter.com/perryneal).
 
-Kindle and ePub format provided using [PanDoc](http://johnmacfarlane.net/pandoc/). Run make en/mongodb.mobi to generate.
+Если вам нравится эта книга, возможно, вы так же оцените [Маленькую книгу про Redis](http://openmymind.net/2012/1/23/The-Little-Redis-Book/).
 
-## Generating the PDF ##
-I use a variation of <https://github.com/claes/pandoc-templates> to generate the pdf:
+## Лицензия ##
+
+Этак книга распространяется свободно под [Attribution-NonCommercial 3.0 Unported license](<http://creativecommons.org/licenses/by-nc/3.0/legalcode>).
+
+## Форматы ##
+Книга написана на [markdown](http://daringfireball.net/projects/markdown/) и конвертируется в PDF с помощью [PanDoc](http://johnmacfarlane.net/pandoc/). Несколько LaTex-команд добавлены в разметку для правильного создания PDF (в основном, для титульного листа и чтобы главы начинались с новой страницы).
+
+Шаблон LaTex использует [Lena Herrmann's JavaScript highlighter](http://lenaherrmann.net/2010/05/20/javascript-syntax-highlighting-in-the-latex-listings-package).
+
+Форматы Kindle и ePub собираются с [PanDoc](http://johnmacfarlane.net/pandoc/). Для сборки выполните `make en/mongodb.mobi`.
+
+## Сборка PDF ##
+Мы используем слегка измененный шаблон <https://github.com/claes/pandoc-templates> для сборки PDF:
 
 	#!/bin/sh
 	paper=a4paper
@@ -40,5 +48,5 @@ I use a variation of <https://github.com/claes/pandoc-templates> to generate the
 	-V geometry=$geometry -V columns=$columns -V fontsize=$fontsize \
 	-V nohyphenation=$nohyphenation --listings en/mongodb.markdown -o mongodb.pdf 
 
-## Title Image ##
-A PSD of the title image is included. The font used is [Comfortaa](http://www.dafont.com/comfortaa.font).
+## Титульное изображение ##
+Титульное изображение в формате PSD прилагается. Используемый шрифт -- [Comfortaa](http://www.dafont.com/comfortaa.font).
