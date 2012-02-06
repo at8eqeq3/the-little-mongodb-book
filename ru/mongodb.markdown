@@ -184,76 +184,78 @@
 
 \clearpage
 
-## Chapter 2 - Updating ##
-In chapter 1 we introduced three of the four CRUD (create, read, update and delete) operations. This chapter is dedicated to the one we skipped over: `update`. `Update` has a few surprising behaviors, which is why we dedicate a chapter to it.
+## Глава 2 - Обновление ##
+В первой главе мы познакомились с тремя из четырёх CRUD-операций (create, read, update и delete). Эта глава посвящена оставшейся - `update`. У операции `update` есть несколько неожиданных особенностей, поэтому ей и посвщена целая глава.
 
-### Update: Replace Versus $set ###
-In its simplest form, `update` takes 2 arguments: the selector (where) to use and what field to update with. If Roooooodles had gained a bit of weight, we could execute:
+### Обновление: Замена против $set ###
+В своей простейшей форме `update` принимает два аргумента: селектор (where) для нужных документов и какое поле нужно обновить. Если Roooooodles немного набрал вес, мы выполним:
 
 	db.unicorns.update({name: 'Roooooodles'}, {weight: 590})
 
-(if you've played with your `unicorns` collection and it doesn't have the original data anymore, go ahead and `remove` all documents and re-insert from the code in chapter 1.)
+(если вы играли с коллекцией `unicorns` и она уже не содержит нужных данных, просто снесите из неё все записи и выполните заново код из первой главы).
 
-If this was real code, you'd probably update your records by `_id`, but since I don't know what `_id` MongoDB generated for you, we'll stick to `names`.  Now, if we look at the updated record:
+В реальном коде вы, возможно, использовали бы `_id` для выбора полей, но поскольку я не знаю, какие `_id` сгенерировала для вас MongoDB, мы будем использовать `name`. Давайте же посмотрим на обновлённую запись:
 
 	db.unicorns.find({name: 'Roooooodles'})
 
-You should discover `updates` first surprise. No document is found because the second parameter we supply is used to **replace** the original. In other words, the `update` found a document by `name` and replaced the entire document with the new document (the 2nd parameter). This is different than how SQL's `update` command works. In some situations, this is ideal and can be leveraged for some truly dynamic updates. However, when all you want to do is change the value of one, or a few fields, you are best to use MongoDB's `$set` modifier:
+И вот вам сразу первый сюрприз от `update`. Ничего не нашлось, потому что второй параметр **заменил** исходный документ. Другими словами, `update` нашла документ по полю `name` и с чистой совестью заменила его целиком новым документом из второго параметра. Да, это не похоже на поведение `update` из SQL. В некоторых ситуациях это может быть полезным. Однако если вы хотите лишь изменить значение одного или нескольких полей, вам нужно использовать модификатор `$set`:
 
 	db.unicorns.update({weight: 590}, {$set: {name: 'Roooooodles', dob: new Date(1979, 7, 18, 18, 44), loves: ['apple'], gender: 'm', vampires: 99}})
 
-This'll reset the lost fields. It won't overwrite the new `weight` since we didn't specify it. Now if we execute:
+Это вернет потерянным полям прежние значениея. А поскольку мы не указали `weight`, оно затронуто не будет. Теперь выполним:
 
 	db.unicorns.find({name: 'Roooooodles'})
 
-We get the expected result. Therefore, the correct way to have updated the weight in the first place is:
+Теперь мы получим то, что ожидали. Таким образом, правильный способ обновления веса выглядит так:
 
 	db.unicorns.update({name: 'Roooooodles'}, {$set: {weight: 590}})
 
-### Update Modifiers ###
-In addition to `$set`, we can leverage other modifiers to do some nifty things. All of these update modifiers work on fields - so your entire document won't be wiped out. For example, the `$inc` modifier is used to increment a field by a certain positive or negative amount. For example, if Pilot was incorrectly awarded a couple vampire kills, we could correct the mistake by executing:
+### Модификаторы update ###
+В довесок к `$set`, у нас есть еще несколько модификаторов для разных интересных вещей. Эти модификаторы работают с полями, так что весь документ они не стирают. Например, модификатор `$inc` предназначен для изменения значения поля на какое-либо положительное или отрицательное число. Например, если Pilot-у ошибочно засчитали пару убитых вампиров, мы можем исправить это:
 
 	db.unicorns.update({name: 'Pilot'}, {$inc: {vampires: -2}})
 
-If Aurora suddenly developed a sweet tooth, we could add a value to her `loves` field via the `$push` modifier:
+Если Aurora вдруг стала сладкоежкой, мы можем добавить значение в её список `loves` с помощью `$push`:
 
 	db.unicorns.update({name: 'Aurora'}, {$push: {loves: 'sugar'}})
 
-The [Updating](http://www.mongodb.org/display/DOCS/Updating) section of the MongoDB website has more information on the other available update modifiers.
+Раздел [Updating](http://www.mongodb.org/display/DOCS/Updating) сайта MongoDB содержит больше информации об этих и других модификаторах
 
-### Upserts ###
-One of `updates` more pleasant surprises is that it fully supports `upserts`. An `upsert` updates the document if found or inserts it if not. Upserts are handy to have in certain situations and, when you run into one, you'll know it. To enable upserting we set a third parameter to `true`.
+### Upsert-ы ###
+Один из самых приятных сюрпризов `update` - это поддержка т.н. `upserts`. Это обновление документа если он существует или вставка нового в противном случае. Upsert-ы удобным в некоторых ситуациях, и вы это непременно заметите. Чтобы использовать эту фишку, нужно лишь добавить третьим параметром `true`.
 
-A mundane example is a hit counter for a website. If we wanted to keep an aggregate count in real time, we'd have to see if the record already existed for the page, and based on that decide to run an update or insert. With the third parameter omitted (or set to false), executing the following won't do anything:
+Житейский пример - счётчик посещений на сайте. Если мы хотим хранить количество посещений, нам нужно посмотреть, есть ли уже запись для нужной странички, и решить, одновить её или создать новую. Без третьего параметра (или если он установлен в `false`), следующий код не сделает ничего полезного:
 
 	db.hits.update({page: 'unicorns'}, {$inc: {hits: 1}});
 	db.hits.find();
 
-However, if we enable upserts, the results are quite different:
+Однако, с использованием upsert-ов, результат будет иным:
 
 	db.hits.update({page: 'unicorns'}, {$inc: {hits: 1}}, true);
 	db.hits.find();
 
-Since no documents exists with a field `page` equal to `unicorns`, a new document is inserted. If we execute it a second time,the existing document is updated and `hits` is incremented to 2.
+Поскольку до сих пор не существовало документа, у которого `page` было бы равно `unicorns`, будет создан новый. Если мы выполним то же самое ещё раз, `hits` у существующего документа увеличится до 2.
 
 	db.hits.update({page: 'unicorns'}, {$inc: {hits: 1}}, true);
 	db.hits.find();
 
-### Multiple Updates ###
-The final surprise `update` has to offer is that, by default, it'll update a single document. So far, for the examples we've looked at, this might seem logical. However, if you executed something like:
+### Множественные обновления ###
+И последний сюрприз, приготовленный нам `update`, заключается в том, что по умолчанию обновляется только один документ. Для предыдущих примеров это выглядело логичным. Однако, если вы выполните что-то в духе:
 
 	db.unicorns.update({}, {$set: {vaccinated: true }});
 	db.unicorns.find({vaccinated: true});
 
-You'd likely expect to find all of your precious unicorns to be vaccinated. To get the behavior you desire, a fourth parameter must be set to true:
+Вы, вероятно, ожидаете увидеть всех ваших драгоценных единорогов привитыми. На самом деле, для этого нужно установить в `true` четвертый параметр:
  
 	db.unicorns.update({}, {$set: {vaccinated: true }}, false, true);
 	db.unicorns.find({vaccinated: true});
 
-### In This Chapter ###
-This chapter concluded our introduction to the basic CRUD operations available against a collection. We looked at `update` in detail and observed three interesting behaviors. First, unlike an SQL update, MongoDB's `update` replaces the actual document. Because of this the `$set` modifier is quite useful. Secondly, `update` supports an intuitive `upsert` which is particularly useful when paired with the `$inc` modifier. Finally, by default, `update` only updates the first found document.
+### В этой главе ###
+Эта глава завершает наше знакомство с CRUD-операциями, которые можно выполнять с коллекциями. Мы поближе познакомились с `update` и рассмотрели три интересных возможности. Во-первых, в отличие от обновлений в SQL, `update` в MongoDB заменяет исходный документ. Из-за этого модификатор `$set` оказывается оень полезным. Во-вторых, `update` дает нам возможность использовать upsert-ы, что особенно удобно вместе с модификатором `$inc`. И, наконец, по умолчанию `update` обновляет только первый из найденных документов.
 
 Do remember that we are looking at MongoDB from the point of view of its shell. The driver and library you use could alter these default behaviors or expose a different API. For example, the Ruby driver merges the last two parameters into a single hash: `{:upsert => false, :multi => false}`.
+
+Не забывайте, что сейчас мы рассматриваем MongoDB с точки зрения работы через оболочку. Используемые вами драйверы и библиотеки могут иметь другие умолчания или даже предоставлять иные API. Например, дрыйвер для Ruby объединяет последние два параметра в хэш: `{:upsert => false, :multi => false}`.
 
 \clearpage
 
