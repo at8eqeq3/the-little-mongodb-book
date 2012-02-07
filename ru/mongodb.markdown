@@ -259,20 +259,20 @@ Do remember that we are looking at MongoDB from the point of view of its shell. 
 
 \clearpage
 
-## Chapter 3 - Mastering Find ##
-Chapter 1 provided a superficial look at the `find` command. There's more to `find` than understanding `selectors` though. We already mentioned that the result from `find` is a `cursor`. We'll now look at exactly what this means in more detail.
+## Глава 3 - Поиск документов ##
+В первой главе мы уже кратко взглянули на команду `find`. Однако, её возможности не ограничиваются селекторами. Мы уже упоминали, что результатом работы `find` является курсор. Давайте же посмотрим более детально, что к чему.
 
-### Field Selection ###
-Before we jump into `cursors`, you should know that `find` takes a second optional parameter. This parameter is the list of fields we want to retrieve. For example, we can get all of the unicorns names by executing:
+### Выбор полей ###
+Прежде, чем вплотную заняться курсорами, вам следует знать, что `find` принимает второй аргумент. Например, мы можем найти только имена всех единорогов:
 
 	db.unicorns.find(null, {name: 1});
 
-By default, the `_id` field is always returned. We can explicitly exclude it by specifying `{name:1, _id: 0}`.
+По умолчанию, в ответе всегда будет поле `_id`. Но мы можем явно исключить его, указав `{name:1, _id: 0}`.
 
-Aside from the `_id` field, you cannot mix and match inclusion and exclusion. If you think about it, that actually makes sense. You either want to select or exclude one or more fields explicitly.
+Кроме поля `_id` смешивать включение и исключение других полей нельзя. Если вы думали об этом, то это важно. Вам следует явно либо выбирать, либо исключать поля.
 
-### Ordering ###
-A few times now I've mentioned that `find` returns a cursor whose execution is delayed until needed. However, what you've no doubt observed from the shell is that `find` executes immediately. This is a behavior of the shell only. We can observe the true behavior of `cursors` by looking at one of the methods we can chain to `find`. The first that we'll look at is `sort`. `sort` works a lot like the field selection from the previous section. We specify the fields we want to sort on, using 1 for ascending and -1 for descending. For example:
+### Сортировка ###
+Я уже неоднократно упоминал, что `find` возвращает курсор, реальное выполнение которого откладывается до победного. Однако, как вы, несомненно заметили, работая с оболочкой, `find` выполняется сразу же. Такое поведение характерно только для оболочки. Истинное поведение курсоров можно увидеть, взглянув на методы, которые можно сцепить с `find`. Первый из них - это `sort`. Он работает подобно выбору полей из предыдущего раздела. Мы указываем поля, по которым сортировать, и 1 для сортировки по возрастанию либо -1 - по убыванию. Например:
 
 	//heaviest unicorns first
 	db.unicorns.find().sort({weight: -1})
@@ -280,26 +280,26 @@ A few times now I've mentioned that `find` returns a cursor whose execution is d
 	//by vampire name then vampire kills:
 	db.unicorns.find().sort({name: 1, vampires: -1})
 
-Like with a relational database, MongoDB can use an index for sorting. We'll look at indexes in more detail later on. However, you should know that MongoDB limits the size of your sort without an index. That is, if you try to sort a large result set which can't use an index, you'll get an error. Some people see this as a limitation. In truth, I wish more databases had the capability to refuse to run unoptimized queries. (I won't turn every MongoDB drawback into a positive, but I've seen enough poorly optimized databases that I sincerely wish they had a strict-mode.)
+Как и реляционные базы данных, MongoDB может использовать индексы при сортировке. С индексами мы познакомимся чуть позже. Однако, важно знать, что MongoDB ограничивает размер сортировки без индекса. Таким образом, при попытке отсортировать большую выборку без индекса, мы получим ошибку. Некоторые считают это ограничением. По правде говоря, я бы хотел, чтобы у всех СУБД была возможность запрещать выполнение неоптимизированных запросов (я не пытаюсь превратить каждый недостаток MongoDB в достоинство, но я достаточно насмотрелся на плохо оптимизированные БД и искренне мечтаю, чтобы в них была какая-либо строгость).
 
-### Paging ###
-Paging results can be accomplished via the `limit` and `skip` cursor methods. To get the second and third heaviest unicorn, we could do:
+### Разбиение на страницы ###
+Разбиение результата на страницы выполняется с помощью методов `limit` и `skip` курсора. Чтобы выбрать второго и третьего по весу единорога, сделаем:
 
 	db.unicorns.find().sort({weight: -1}).limit(2).skip(1)
 
-Using `limit` in conjunction with `sort`, is a good way to avoid running into problems when sorting on non-indexed fields.
+Использование `limit` в связке с `sort` - хороший способ избежать проблем при сортировке по неиндексированным полям
 
-### Count ###
-The shell makes it possible to execute a `count` directly on a collection, such as:
+### Подсчёт ###
+Оболочка позвлоляет выполнить `count` прямо на коллекции, как-то так:
 
 	db.unicorns.count({vampires: {$gt: 50}})
 
-In reality, `count` is actually a `cursor` method, the shell simply provides a shortcut. Drivers which don't provide such a shortcut need to be executed like this (which will also work in the shell):
+В реальности же `count` - это метод курсора, в оболочку же просто встроен костыль для этого. Драйверы, не имеющие такой плюшки, требуют такого подхода (в оболочке тоже работает):
 
 	db.unicorns.find({vampires: {$gt: 50}}).count()
 
-### In This Chapter ###
-Using `find` and `cursors` is a straightforward proposition. There are a few additional commands that we'll either cover in later chapters or which only serve edge cases, but, by now, you should be getting pretty comfortable working in the mongo shell and understanding the fundamentals of MongoDB.
+### В этой главе ###
+Использование `find` и курсоров - это явное преимущество. Есть еще несколько дополнительных команд, которые мы либо рассмотрим в дальнейших главах, либо которые предназначены для специфичных задач. Сейчас же вы уже должны достаточно комфортно чувствовать себя в оболочке mongo и понимать основы MongoDB/
 
 \clearpage
 
