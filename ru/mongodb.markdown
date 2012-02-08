@@ -253,8 +253,6 @@
 ### В этой главе ###
 Эта глава завершает наше знакомство с CRUD-операциями, которые можно выполнять с коллекциями. Мы поближе познакомились с `update` и рассмотрели три интересных возможности. Во-первых, в отличие от обновлений в SQL, `update` в MongoDB заменяет исходный документ. Из-за этого модификатор `$set` оказывается оень полезным. Во-вторых, `update` дает нам возможность использовать upsert-ы, что особенно удобно вместе с модификатором `$inc`. И, наконец, по умолчанию `update` обновляет только первый из найденных документов.
 
-Do remember that we are looking at MongoDB from the point of view of its shell. The driver and library you use could alter these default behaviors or expose a different API. For example, the Ruby driver merges the last two parameters into a single hash: `{:upsert => false, :multi => false}`.
-
 Не забывайте, что сейчас мы рассматриваем MongoDB с точки зрения работы через оболочку. Используемые вами драйверы и библиотеки могут иметь другие умолчания или даже предоставлять иные API. Например, дрыйвер для Ruby объединяет последние два параметра в хэш: `{:upsert => false, :multi => false}`.
 
 \clearpage
@@ -303,82 +301,80 @@ Do remember that we are looking at MongoDB from the point of view of its shell. 
 
 \clearpage
 
-## Chapter 4 - Data Modeling ##
-Let's shift gears and have a more abstract conversation about MongoDB. Explaining a few new terms and some new syntax is a trivial task. Having a conversation about modeling with a new paradigm isn't as easy. The truth is that most of us are still finding out what works and what doesn't when it comes to modeling with these new technologies. It's a conversation we can start having, but ultimately you'll have to practice and learn on real code.
+## Глава 4 - Моделирование данных ##
+Предлагаю перейти к немного более абстрактной теме, касающейся MongoDB. Объяснить неколько новых терминов и немного нового синтаксиса - не самая сложная задача. Рассмотреть особенности моделирования с новой парадигмой - на порядок сложнее. На самом деле, многие из нас продолжают методом проб и ошибок искать правильный подход к моделированию в этих новых технологиях. Мы лишь начнем этот разговор, но большую часть этой темы вам придется раскрыть самостоятельно, работая с реальным кодом.
 
-Compared to most NoSQL solutions, document-oriented databases are probably the least different, compared to relational databases, when it comes to modeling. The differences which exist are subtle but that doesn't mean they aren't important. 
+По сравнению с другими NoSQL-решениями, документ-ориентированные БД, возможно, меньше всего отличаются от реляционных в плане моделирования. Разница не велика, но это не значит, что ею можно пренебречь.
 
-### No Joins ###
-The first and most fundamental difference that you'll need to get comfortable with is MongoDB's lack of joins. I don't know the specific reason why some type of join syntax isn't supported in MongoDB, but I do know that joins are generally seen as non-scalable. That is, once you start to horizontally split your data, you end up performing your joins on the client (the application server) anyways. Regardless of the reasons, the fact remains that data *is* relational, and MongoDB doesn't support joins.
+### Никаких объединений ###
+Первое и самое важное отличие, которое нужно усвоить для комфортной работы с MongoDB - это отсутствие джойнов. Я не знаю точной причины, почему некоторые возможности джойнов не поддерживаются в MongoDB, но я точно знаю, что джойны масштабируются примерно никак. Таким образом, однажды начав разделять свои данные горизонтально, вы дойдете до выполнения джойнов на клиенте (т.е. в сервере приложений). Независимо от причин, остается фактом то, что данные *являются* реляционными, а MongoDB не поддерживает джойны.
 
-Without knowing anything else, to live in a join-less world, we have to do joins ourselves within our application's code. Essentially we need to issue a second query to `find` the relevant data. Setting our data up isn't any different than declaring a foreign key in a relational database. Let's give a little less focus to our beautiful `unicorns` and a bit more time to our `employees`. The first thing we'll do is create an employee (I'm providing an explicit `_id` so that we can build coherent examples)
+Не имея ничего другого и живя в мире без объединений, мы вынуждены выполнять их самостоятельно, из кода нашего приложения. Мы всего лишь должны выполнить еще один `find` за нужными данными. Отличий от объявления внешнего ключа не много. Давайте немного отвлечемся от единорогов и взглянем на сотрудников. Для начала мы создадим одного (я явно указываю `_id`, чтобы вы могли использовать дальнейшие примеры без изменений):
 
 	db.employees.insert({_id: ObjectId("4d85c7039ab0fd70a117d730"), name: 'Leto'})
 
-Now let's add a couple employees and set their manager as `Leto`:
+Давайте добавим еще сотрудников, и назначим Leto их руководителем:
 
 	db.employees.insert({_id: ObjectId("4d85c7039ab0fd70a117d731"), name: 'Duncan', manager: ObjectId("4d85c7039ab0fd70a117d730")});
 	db.employees.insert({_id: ObjectId("4d85c7039ab0fd70a117d732"), name: 'Moneo', manager: ObjectId("4d85c7039ab0fd70a117d730")});
 
+(Не будет лишним напомнить, что значения `_id` должны быть уникальными. Поскольку вы, скорее всего, будете использовать `ObjectId` в своих приложениях, здесь тоже будет он)
 
-(It's worth repeating that the `_id` can be any unique value. Since you'd likely use an `ObjectId` in real life, we'll use them here as well.)
-
-Of course, to find all of Leto's employees, one simply executes:
+Конечно же, чтобы найти всех подчинённых Leto, можно просто выполнить:
 
 	db.employees.find({manager: ObjectId("4d85c7039ab0fd70a117d730")})
 
-There's nothing magical here. In the worst cases, most of the time, the lack of join will merely require an extra query (likely indexed).
+Вот и всё, никакой магии. В худшем случае, отсутствие соединений будет требовать лишь дополнительного запроса (индексированного, пожалуй).
 
-#### Arrays and Embedded Documents ####
-Just because MongoDB doesn't have joins doesn't mean it doesn't have a few tricks up its sleeve. Remember when we quickly saw that MongoDB supports arrays as first class objects of a document? It turns out that this is incredibly handy when dealing with many-to-one or many-to-many relationships. As a simple example, if an employee could have two managers, we could simply store these in an array:
+#### Массивы и внедрённые документы ####
+То, что MongoDB не умеет джойны, ещё не означает, что у неё нет других хитростей. Помните, мы немного говорили о том, что MongoDB поддерживает массивы как первоклассные объекты? Это же невероятно удобно, когда нам надо организовать отношения многие-к-одному и многие-ко-многим. В качестве простого примера, если у сотрудника может оказаться два руководителя, мы просто положим их в массив:
 
 	db.employees.insert({_id: ObjectId("4d85c7039ab0fd70a117d733"), name: 'Siona', manager: [ObjectId("4d85c7039ab0fd70a117d730"), ObjectId("4d85c7039ab0fd70a117d732")] })
 
-Of particular interest is that, for some documents, `manager` can be a scalar value, while for others it can be an array. Our original `find` query will work for both:
+В качестве дополнительной плюшки, `manager` для некоторых документов может быть скалярным значением, а для некоторых - массивом. Наш `find` прекрасно отработает в обоих случаях:
 
 	db.employees.find({manager: ObjectId("4d85c7039ab0fd70a117d730")})
 
-You'll quickly find that arrays of values are much more convenient to deal with than many-to-many join-tables.
+Полагаю, вы быстро обнаружите, что массивы значений гораздо более удобны, чем эти ваши таблицы с джойнами.
 
-Besides arrays, MongoDB also supports embedded documents. Go ahead and try inserting a document with a nested document, such as:
+Помимо массивов, MongoDB также поддерживает внедрённые документы. Попробуйте создать документ с внедрённым документом, вот так:
 
 	db.employees.insert({_id: ObjectId("4d85c7039ab0fd70a117d734"), name: 'Ghanima', family: {mother: 'Chani', father: 'Paul', brother: ObjectId("4d85c7039ab0fd70a117d730")}})
 
-In case you are wondering, embedded documents can be queried using a dot-notation:
+И, как вы, вероятно, уже подумали, внедрённый документ можно запросить, используя точечную нотацию:
 
 	db.employees.find({'family.mother': 'Chani'})
 
-We'll briefly talk about where embedded documents fit and how you should use them.
+Давайте кратко побеседуем о том, в каких случаях пригодятся внедрённые документы и как их использовать.
 
 #### DBRef ####
-MongoDB supports something known as `DBRef` which is a convention many drivers support. When a driver encounters a `DBRef` it can automatically pull the referenced document. A `DBRef` includes the collection and id of the referenced document. It generally serves a pretty specific purpose: when documents from the same collection might reference documents from a different collection from each other. That is, the `DBRef` for document1 might point to a document in `managers` whereas the `DBRef` for document2 might point to a document in `employees`.
+MongoDB поддерживает нечто, именуемое `DBRef`, и это соглашение поддерживают многие драйверы. Когда драйвер встречает `DBRef`, он автоматически подтягивает ссылаемый документ. `DBRef` включает в себя коллекцию и идентификатор ссылаемого документа. Это, в основном, служит одной специфичной цели: когда документы из одной коллекции ссылаются на документы из другой, и наоборот. Таким образом, `DBRef` для документа document1 может указывать на документ в `managers`, а `DBRef` из document2 может указывать на документ из `employees`.
 
+#### Денормализация ####
+Ещё одной альтернативой джойнам является денормализация данных. Исторически, денормализация применялась лишь для весьма чувствительного к производительности кода, или когда данные нужно было действительно дублировать (как в журналах аудита). Однако, с ростом популярности NoSQL, многие из которых не умеют джойны, денормализация всё чаще становится частью обычного процесса моделирования. Это не значит, что нужно дублировать вообще все данные в каждом документе. Но, вместо того, чтобы бояться дублирования в своих моделях, просто обращайте внимение на то, где и что хранить.
 
-#### Denormalization ####
-Yet another alternative to using joins is to denormalize your data. Historically, denormalization was reserved for performance-sensitive code, or when data should be snapshotted (like in an audit log). However, with the ever-growing popularity of NoSQL, many of which don't have joins, denormalization as part of normal modeling is becoming increasingly common. This doesn't mean you should duplicate every piece of information in every document. However, rather than letting fear of duplicate data drive your design decisions, consider modeling your data based on what information belongs to what document.
+Для примера допустим, что вы разрабатываете движок форума. Традиционный способ связать определенного пользователя с постом - это добавить в `posts` колонку `user_id`. В такой модели вы не можете отобразить посты, не запрашивая (т.е., без объединения) пользователей. Возможной альтернативой будет хранение имени вместе с `user_id` в каждом посте. Можно даже использовать внедрённый документ для этого: `user: {id: ObjectId('Something'), name: 'Leto'}`. Разумеется, если вы разрешаете юзерам менять свои имена, вам придётся в таких случаях обновлять все посты (что есть еще один дополнительный запрос).
 
-For example, say you are writing a forum application. The traditional way to associate a specific `user` with a `post` is via a `userid` column within `posts`. With such a model, you can't display `posts` without retrieving (joining to) `users`. A possible alternative is simply to store the `name` as well as the `userid` with each `post`. You could even do so with an embedded document, like `user: {id: ObjectId('Something'), name: 'Leto'}`. Yes, if you let users change their name, you'll have to update each document (which is 1 extra query). 
+Иногда приспособиться к такому подходу бывает непросто. В некоторых случаях будет даже непонятно, нужен ли он. Не бойтесь экспериментировать. Он не только подходит для некоторых ситуаций, но и является единственно верным.
 
-Adjusting to this kind of approach won't come easy to some. In a lot of cases it won't even make sense to do this. Don't be afraid to experiment with this approach though. It's not only suitable in some circumstances, but it can also be the right way to do it.
+#### Что же выбрать? ####
+Массивы идентификаторов - это всегда полезная стратегия, когда приходится работать с отношениями один-ко-многим и многие-ко-многим. Можно даже сказать, что `DBRef` используется довольно редко, хотя вы, конечно же, можете повозиться и с ними. Этот момент обычно оставляет начинающих разработчиков в непонятках, использовать ли внедрённые документы или просто ссылаться.
 
-#### Which Should You Choose? ####
-Arrays of ids are always a useful strategy when dealing with one-to-many or many-to-many scenarios. It's probably safe to say that `DBRef` aren't use very often, though you can certainly experiment and play with them. That generally leaves new developers unsure about using embedded documents versus doing manual referencing.
-
-First, you should know that an individual document is currently limited to 4 megabytes in size. Knowing that documents have a size limit, though quite generous, gives you some idea of how they are intended to be used. At this point, it seems like most developers lean heavily on manual references for most of their relationships. Embedded documents are frequently leveraged, but mostly for small pieces of data which we want to always pull with the parent document. A real world example I've used is to store an `accounts` document with each user, something like:
+Первое, что нужно знать - это то, что каждый отдельный документ ограничен в размерах до 4 мегабайт. Знание, что документы имеют ограничения, пусть и достаточно большие, подсказывает нам, как их лучше использовать. Сейчас будет казаться, что большинство разработчиков делают больший упор на ссылки для своих отношений. Внедренные документы тоже часто используются, но лишь для хранения небольших кусочков данных, которые непременно надо таскать вмете с объемлющим документом. В качестве живого примера я использую документов `accounts` вместе с каждым пользователем, как-то так:
 
 	db.users.insert({name: 'leto', email: 'leto@dune.gov', account: {allowed_gholas: 5, spice_ration: 10}})
 
-That doesn't mean you should underestimate the power of embedded documents or write them off as something of minor utility. Having your data model map directly to your objects makes things a lot simpler and often does remove the need to join. This is especially true when you consider that MongoDB lets you query and index fields of an embedded document. 
+Это не означает, что нужно недооценивать мощь внедрённых документов и использовать их как что-то менее полезное. Проецирование модели данных на объекты реального мира упрощает принятие решений и часто избавляет от нужды в джойнах. Это будет особенно верно, когда вы увидите, что MongoDB позволяет запрашивать и индексировать поля внедрённых документов.
 
-### Few or Many Collections ###
-Given that collections don't enforce any schema, it's entirely possible to build a system using a single collection with a mismatch of documents.  From what I've seen, most MongoDB systems are laid out similarly to what you'd find in a relational system. In other words, if it would be a table in a relational database, it'll likely be a collection in MongoDB (many-to-many join tables being an important exception).
+### Мало или много коллекций ###
+Зная, что коллекции не имеют никакой схемы, возможно построить систему с единственной коллекцией, хранящей совсем разношёрстные документы. Но по моим личным наблюдениям, системы в MongoDB чаще строятся аналогично реляционным системам: то, что в РБД было бы таблицей, будет коллекцией в MongoDB (таблицы для отношений многие-ко-многим - это важное исключение).
 
-The conversation gets even more interesting when you consider embedded documents. The example that frequently comes up is a blog. Should you have a `posts` collection and a `comments` collection, or should each `post` have an array of `comments` embedded within it. Setting aside the 4MB limit for the time being (all of Hamlet is less than 200KB, just how popular is your blog?), most developers still prefer to separate things out. It's simply cleaner and more explicit.
+Беседа становится интереснее, когда вы переходите к внедрённым документам. Часто вспоминаемый при этом пример - это блог. Следует ли нам иметь коллекцию `posts` и коллекцию `comments`, или посты должны иметь массив внедрённых в них комментов? Памятуя об ограничении в 4 мегабайта (весь "Гамлет" весит меньше 200 килобайт, напишут ли вам столько комментов?), большинство разработчиков предпочтут разделить коллекции. Это более ясно и чётко.
 
-There's no hard rule (well, aside from 4MB). Play with different approaches and you'll get a sense of what does and does not feel right. 
+Жёстких правил не существует (ну, кроме всё тех же 4 МБ). Попробуйте применять различные подходы, и вы поймёте, что в вашем случае хорошо, а что - нет.
 
-### In This Chapter ###
-Our goal in this chapter was to provide some helpful guidelines for modeling your data in MongoDB. A starting point if you will. Modeling in a document-oriented system is different, but not too different than a relational world. You have a bit more flexibility and one constraint, but for a new system, things tend to fit quite nicely. The only way you can go wrong is by not trying.
+### В этой главе ###
+Нашей целью в этой главе было предоставить несколько полезных идей для моделирования ваших данных в MongoDB. Отправная точка, ежели угодно. Моделирование в документ-ориентированной системе отличается, но не радикально, от реляционного мира. Вы получаете большую гибкость и одно ограничение, но для новых систем всё просто идеально. Единственный ошибочный подход - это не пытаться делать что-либо.
 
 \clearpage
 
