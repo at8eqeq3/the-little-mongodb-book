@@ -607,103 +607,101 @@ reduce может получить:
 
 \clearpage
 
-## Chapter 7 - Performance and Tools ##
-In this last chapter, we look at a few performance topics as well as some of the tools available to MongoDB developers. We won't dive deeply into either topic, but we will examine the most import aspects of each.
+## Глава 7 - Производительность и инструменты ##
+В последней главе мы рассмотрим вопросы производительности, а также несколько полезных инструментов для разработчкиов MongoDB. Мы не будем слишком сильно углубляться в эти темы, но изучим самые важные их части.
 
-### Indexes ###
-At the very beginning we saw the special `system.indexes` collection which contains information on all the indexes in our database. Indexes in MongoDB work a lot like indexes in a relational database: they help improve query and sorting performance. Indexes are created via `ensureIndex`:
+### Индексы ###
+В самом начале мы встретились с особой коллекцией `system.indexes`, хранящей информацию обо всех индексах нашей базы данных. Индексы в MongoDB работают подобно индексам в РБД: они помогают повысить производительность запросов и сортировки. Индексы создаются с помощью `ensureIndex`:
 
 	db.unicorns.ensureIndex({name: 1});
 
-And dropped via `dropIndex`:
+А удаляются с помощью `dropIndex`:
 
 	db.unicorns.dropIndex({name: 1});
 
-A unique index can be created by supplying a second parameter and setting `unique` to `true`:
+Уникальный индекс будет создан, если во втором параметре выставить `unique` значение `true`:
 
 	db.unicorns.ensureIndex({name: 1}, {unique: true});
 
-Indexes can be created on embedded fields (again, using the dot-notation) and on array fields. We can also create compound indexes:
+Индексировать можно так же и внедрённые поля (используя точечную нотацию) и поля-массивы. Мы можем даже создавать сложные индексы:
 
 	db.unicorns.ensureIndex({name: 1, vampires: -1});
 
-The order of your index (1 for ascending, -1 for descending) doesn't matter for a single key index, but it can have an impact for compound indexes when you are sorting or using a range condition.
+[Страница о индексах](http://www.mongodb.org/display/DOCS/Indexes) может рассказать о них ещё кое-что.
 
-The [indexes page](http://www.mongodb.org/display/DOCS/Indexes) has additional information on indexes.
-
-### Explain ###
-To see whether or not your queries are using an index, you can use the `explain` method on a cursor:
+### Объяснение (Explain) ###
+Чтобы увидеть, используют ли ваши запросы индекс, вы можете использовать `explain` на курсоре:
 
 	db.unicorns.find().explain()
 
-The output tells us that a `BasicCursor` was used (which means non-indexed), 12 objects were scanned, how long it took, what index, if any was used as well as a few other pieces of useful information.
+Вывод сообщает нам, что был использован `BasicCursor` (то есть, не индексированный), было просмотрено 12 объектов, сколько времени это заняло, какой индекс (если он есть), и другие полезные сведения.
 
-If we change our query to use an index, we'll see that a `BtreeCursor` was used, as well as the index used to fulfill the request:
+Если мы изменим запрос так, что будет задействован индекс, мы увидим, что используется `BtreeCursor`, и что индекс действительно использовался:
 
 	db.unicorns.find({name: 'Pilot'}).explain()
 
-### Fire And Forget Writes ###
-We previously mentioned that, by default, writes in MongoDB are fire-and-forget. This can result in some nice performance gains at the risk of losing data during a crash. An interesting side effect of this type of write is that an error is not returned when an insert/update violates a unique constraint. In order to be notified about a failed write, one must call `db.getLastError()` after an insert. Many drivers abstract this detail away and provide a way to do a *safe* write - often via an extra parameter.
+### Запись в стиле "выстрелил и забыл" ###
+Мы уже упоминали ранее, что по умолчанию в MongoDB запись работает по принципу "выстрелил и забыл". Это неплохо повышает производительность ценой риска потерять данные в случае аварии. Интересным побочным эффектом является так же то, что попытка сохранения записи с неуникальным ключом не возвращает ошибку. Чтобы узнать о том, что что-то пошло не так, следует вызывать `db.getLastError()` после вставки. Многие драйверы скрывают эти шаги и позволяют выполнить безопасную запись, как правило, с помощью лишь дополнительного параметра.
 
-Unfortunately, the shell automatically does safe inserts, so we can't easily see this behavior in action.
+К сожалению, оболочка автоматически осуществляет безопасную вставку, поэтому увидеть это поведение в действии непросто
 
-### Sharding ###
-MongoDB supports auto-sharding. Sharding is an approach to scalability which separates your data across multiple servers. A naive implementation might put all of the data for users with a name that starts with A-M on server 1 and the rest on server 2. Thankfully, MongoDB's sharding capabilities far exceed such a simple algorithm. Sharding is a topic well beyond the scope of this book, but you should know that it exists and that you should consider it should your needs grow beyond a single server.
+### Разбиение ###
+MongoDB поддерживает разбиение. Это такой подход к масштабированию, когда данные распределяются по множеству серверов. Наивная реализация может складывать данные пользователей с именами, начинающимися на буквы от A до M на один сервер, а данные остальных - на второй. К счастью, MongoDB использует значительно более умный алгоритм. Изучение этой темы выходит за рамки книги, но вам следует знать, что оно существует и потребуется его изучать, когда вам станет тесно на одном сервере.
 
-### Replication ###
-MongoDB replication works similarly to how relational database replication works. Writes are sent to a single server, the master, which then synchronizes itself to one or more other servers, the slaves. You can control whether reads can happen on slaves or not, which can help distribute your load at the risk of reading slightly stale data. If the master goes down, a slave can be promoted to act as the new master. Again, MongoDB replication is outside the scope of this book.
+### Репликация ###
+Репликация в MongoDB работает почти так же, как и в реляционных базах данных. Запись производится на одном сервере (который мастер), который затем синхронизирует себя с одним или более серверами (слейвами). Вы можете управлять тем, будут ли данные читаться со слейвов или нет - это поможет распределить нагрузку ценой риска получить неактуальные данные. Если мастер перестаёт функционировать, слейв можно делать новым мастером. Опять-таки, репликация - это тема отдельной книги.
 
- While replication can improve performance (by distributing reads), its main purpose is to increase reliability. Combining replication with sharding is a common approach. For example, each shard could be made up of a master and a slave. (Technically you'll also need an arbiter to help break a tie should two slaves try to become masters. But an arbiter requires very few resources and can be used for multiple shards.)
+Хотя репликация и может увеличить производительнось (распределяя операции чтения), её основное предназначение - это увеличение надёжности. Часто репликацию комбинируют с разделением. Например, каждый шард может состоять из мастера и слейва (технически, для этого ещё нужен арбитр, решающий, кто из двух слейвов может стать мастером, но арбитр потребляет мало ресурсов и поэтому он может быть один на несколько шардов).
 
-### Stats ###
-You can obtain statistics on a database by typing `db.stats()`. Most of the information deals with the size of your database. You can also get statistics on a collection, say `unicorns`, by typing `db.unicorns.stats()`. Again, most of this information relates to the size of your collection.
+### Статистика ###
+Статистику по базе данных можно собрать, выполнив `db.stats()`. Большая часть информации будет касаться размеров базы данных. Статистику можно так же получить и по коллекции: например, для `unicorns` мы выполним `db.unicorns.stats()`. Опять же, информация будет в основном о размерах коллекции.
 
-### Web Interface ###
-Included in the information displayed on MongoDB's startup was a link to a web-based administrative tool (you might still be able to see if if you scroll your command/terminal window up to the point where you started `mongod`). You can access this by pointing your browser to <http://localhost:28017/>. To get the most out of it, you'll want to add `rest=true` to your config and restart the `mongod` process. The web interface gives you a lot of insight into the current state of your server.
+### Веб-интерфейс ###
+Информация, выводимая MongoDB при старте, содержит ссылку на веб-интерфейс администрирования (вы можете найти её, прокрутив вверх окно терминала до того места, где вы выполнили `mongod`). На него можно зайти, введя в браузере <http://localhost:28017/>. Чтобы сделать его максимально полезным, добавьте строку `rest=true` в конфигурационный файл и перезапустите `mongod`. Веб-интерфейс отображает массу полезной информации о текущем состоянии сервера.
 
-### Profiler ###
-You can enable the MongoDB profiler by executing:
+### Профилировщик ###
+Профилировщик MongoDB можно включить, выполнив:
 
 	db.setProfilingLevel(2);
 
-With it enabled, we can run a command:
+После этого мы можем выполнить команду:
 
 	db.unicorns.find({weight: {$gt: 600}});
 
-And then examine the profiler:
+А потом посмотреть в профилировщик:
 
 	db.system.profile.find()
 
-The output tells us what was run and when, how many documents were scanned, and how much data was returned.
+Вывод расскажет нам, что было выполнено и когда, сколько документов было просмотрено и сколько данных возвращено.
 
-You can disable the profiler by calling `setProfileLevel` again but changing the argument to `0`. Another option is to specify `1` which will only profile queries that take more than 100 milliseconds. Or, you can specify the minimum time, in milliseconds, with a second parameter:
+Отключается профилировщик вызовом `setProfileLevel` ещё раз, но с аргументом `0`. Другой вариант - указать `1`, тогда профилироваться будут только запросы, выполняющиеся дольше 100 миллисекунд. Либо вы можете указать минимальное вермя, в миллисекундах, во втором параметре:
 
 	//profile anything that takes more than 1 second
 	db.setProfilingLevel(1, 1000);
 
-### Backups and Restore ###
-Within the MongoDB `bin` folder is a `mongodump` executable. Simply executing `mongodump` will connect to localhost and backup all of your databases to a `dump` subfolder. You can type `mongodump --help` to see additional options. Common options are `--db DBNAME` to back up a specific database and `--collection COLLECTIONAME` to back up a specific collection. You can then use the `mongorestore` executable, located in the same `bin` folder, to restore a previously made backup. Again, the `--db` and `--collection` can be specified to restore a specific database and/or collection. 
+### Резервное копирование и восстановление ###
+В каталоге `bin` есть исполняемый файл `mongodump`. Будучи вызванным без аргументов, он подключится к localhost и скопирует все базы данных в каталог `dump`. Чтобы увидеть возможные параметры выполните `mongodump --help`. Чаще всего используются `--db DBNAME` для копирования определённой базы данных и `--collection COLLECTIONNAME` для копирования определённой коллекции. После этого можно использовать `mongorestore`, лежащую всё в той же `bin` для восстановления сохранённой ранее копии. И снова опции `--db` и `--collection` могут использоваться для указания конкретных баз данных и коллекций.
 
-For example, to back up our `learn` collection to a `backup` folder, we'd execute (this is its own executable which you run in a command/terminal window, not within the mongo shell itself):
+Например, для создания резервной копии базы данных `learn` в каталог `backup`, мы выполним (это обычный исполняемый файл, его надо выполнять в обычном терминале, а не в оболочке MongoDB):
 
 	mongodump --db learn --out backup
 
-To restore only the `unicorns` collection, we could then do:
+Чтобы восстановить только коллекцию `unicorns`, мы потом можем сделать:
 
 	mongorestore --collection unicorns backup/learn/unicorns.bson
 
-It's worth pointing out that `mongoexport` and `mongoimport` are two other executables which can be used to export and import data from JSON or CSV. For example, we can get a JSON output by doing:
+Будет так же полезно сказать, что программы `mongoexport` и `mongoimport` позволяют экспортировать и импортировать данные в форматах JSON и CSV. Например, мы можем получить JSON, сделав так:
 
 	mongoexport --db learn -collection unicorns
 
-And a CSV output by doing:
+А CSV - вот так:
 
 	mongoexport --db learn -collection unicorns --csv -fields name,weight,vampires
 
-Note that `mongoexport` and `mongoimport` cannot always represent your data. Only `mongodump` and `mongorestore` should ever be used for actual backups.
+Обратите внимание, что `mongoexport` и `mongoimport` в некоторых случаях не смогут корректно представить данные. Для бэкапов пригодны лишь `mongodump` and `mongorestore`.
 
-### In This Chapter ###
-In this chapter we looked a various commands, tools and performance details of using MongoDB. We haven't touched on everything, but we've looked at the most common ones. Indexing in MongoDB is similar to indexing with relational databases, as are many of the tools. However, with MongoDB, many of these are to the point and simple to use.
+### В этой главе ###
+В этой главе мы рассмотрели различные команды, инструменты и детали производительности MongoDB. Конечно же, это далеко не всё, мы коснулись только самого важного. Индексирование в MongoDB похоже на таковое в реляционных базах, то же самое можно сказать о большинстве инструментов. Однако, в MongoDB многие из них очень полезны и просты в использовании.
 
 \clearpage
 
