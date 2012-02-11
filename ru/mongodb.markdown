@@ -378,68 +378,72 @@ MongoDB поддерживает нечто, именуемое `DBRef`, и эт
 
 \clearpage
 
-## Chapter 5 - When To Use MongoDB ##
-By now you should have a good enough understanding of MongoDB to have a feel for where and how it might fit into your existing system. There are enough new and competing storage technologies that it's easy to get overwhelmed by all of the choices. 
+## Глава 5 - Когда использовать MongoDB ##
+К этому моменту у вас уже должно было сложиться хорошее понимание того, как вы сможете использовать MongoDB в ваших существующих системах. От количества новых технологий хранения даже голова может закружиться.
 
-For me, the most important lesson, which has nothing to do with MongoDB, is that you no longer have to rely on a single solution for dealing with your data. No doubt, a single solution has obvious advantages and for a lot projects, possibly even most, a single solution is the sensible approach. The idea isn't that you must use different technologies, but rather that you can. Only you know whether the benefits of introducing a new solution outweigh the costs.
+Для меня лично самый важный урок - это то, что больше не нужно завязываться на единственное решение для хранения данных. Несомненно, единственное хранилище имеет неоспоримые преимущества, и для множества (пожалуй, даже большинства) проектов оно будет оптимальным подходом. Идея не в том, что вы должны использовать различные технологии, но в том, что вы можете это сделать. Только вы можете решить, когда стоит добавлять еще одно решение.
 
-With that said, I'm hopeful that what you've seen so far has made you see MongoDB as a general solution. It's been mentioned a couple times that document-oriented databases share a lot in common with relational databases. Therefore, rather than tiptoeing around it, let's simply state that MongoDB should be seen as a direct alternative to relational databases. Where one might see Lucene as enhancing a relational database with full text indexing, or Redis as a persistent key-value store, MongoDB is a central repository for your data.
+С учётом всего сказанного, я надеюсь, что вы видите MongoDB как решение общего назначения. Мы уже упоминали несколько раз, что документ-ориентированные БД имеют много общего с реляционными. Вместо того, чтобы играть словами, давайте просто договоримся, что MongoDB можно рассматривать как прямую альтернативу реляционным базам. Там, где кто-то видит Lucene как улучшение для полнотекстовых индексов, или Redis как персистентное хранилище ключ-значение, MongoDB будет центральным хранилищем ваших данных.
 
-Notice that I didn't call MongoDB a *replacement* for relational databases, but rather an *alternative*. It's a tool that can do what a lot of other tools can do. Some of it MongoDB does better, some of it MongoDB does worse. Let's dissect things a little further.
+Прошу заметить, что я назвал MongoDB не *заменой* реляционных БД, но *альтернативой* им. Это инструмент, который может делать то же самое, что и все остальные. Что-то MongoDB делает лучше, что-то - хуже. Давайте разберёмся, что именно.
 
-### Schema-less ###
-An oft-touted benefit of document-oriented database is that they are schema-less. This makes them much more flexible than traditional database tables. I agree that schema-less is a nice feature, but not for the main reason most people mention.
+### Отсутствие схемы ###
+Одним из самых часто упоминаемых преимуществ документ-ориентированных баз является отсутствие схемы. Это делает их много более гибкими, чем традиционные таблицы. Я согласен, что бессхемность - это удобная штука, но совсем не по той причине, которая многими упоминается.
 
-People talk about schema-less as though you'll suddenly start storing a crazy mismatch of data. There are domains and data sets which can really be a pain to model using relational databases, but I see those as edge cases. Schema-less is cool, but most of your data is going to be highly structured. It's true that having an occasional mismatch can be handy, especially when you introduce new features, but in reality it's nothing a nullable column probably wouldn't solve just as well.
+Люди говорят о бессхемности как если бы вы вдруг стали хранить чумовую мешанину данных. Существуют такие области и наборы данных, которые действительно трудно смоделировать для реляционных БД, но это же только крайние случаи. Бессхемность - это здорово, но большая часть ваших данных так или иначе структурирована. Согласен, иметь отдельные расхождения удобно, особенно при добавлении нового функционала, но в реальности нет ничего, что бы нельзя было решить с помощью столбцов, допускающих пустые значения.
 
-For me, the real benefit of schema-less design is the lack of setup and the reduced friction with OOP. This is particularly true when you're working with a static language. I've worked with MongoDB in both C# and Ruby, and the difference is striking. Ruby's dynamism and its popular ActiveRecord implementations already reduce much of the object-relational impedance mismatch. That isn't to say MongoDB isn't a good match for Ruby, it really is. Rather, I think most Ruby developers would see MongoDB as an incremental improvement, whereas C# or Java developers would see a fundamental shift in how they interact with their data. 
+Для меня, реальными преимуществами бессхемности являются более простая настройка и лёгкость связывания с ООП. Это особенно верно, когда вы работаете со статическими языками. Я работал с MongoDB в C# и Ruby, и разница впечатляет. Динамизм Ruby и его популярная библиотека ActiveRecord сами по себе уменьшают трудности связи данных и объектов. Я не хочу сказать, что MongoDB не подходит для Ruby, ещё как подходит. Многие Ruby-разработчики увидят в MongoDB просто улучшение, тогда как программисты на C# или Java заметят серьёзные различия в подходе к работе с данными.
 
-Think about it from the perspective of a driver developer. You want to save an object? Serialize it to JSON (technically BSON, but close enough) and send it to MongoDB. There is no property mapping or type mapping. This straightforwardness definitely flows to you, the end developer.
+Подумайте об этом с точки зрения разработчика драйвера. Вы хотите сохранить объект? Сериализуйте его в JSON (на самом деле, BSON, но разница не велика) и отправьте его MongoDB. Не нужно никаких соответствия свойств и типов. Эта прямолинейность, определённо, влияет на вас, разработчиков.
 
 ### Writes ###
-One area where MongoDB can fit a specialized role is in logging. There are two aspects of MongoDB which make writes quite fast. First, you can send a write command and have it return immediately without waiting for it to actually write. Secondly, with the introduction of journaling in 1.8, and enhancements made in 2.0, you can control the write behavior with respect to data durability. These settings, in addition to specifying how many servers should get your data before being considered successful, are configurable per-write, giving you a great level of control over write performance and data durability.
+Есть одна задача, для которой MongoDB очень хорошо подходит - логирование. У неё есть две хитрости, делающие запись очень быстрой. Во-первых, команда на запись выполняется мгновенно, а не заставляет нас ждать, пока запись действительно произойдёт. Во-вторых, с представлением журналирования в версии 1.8 и улучшениями в 2.0, записью можно управлять для достижения нужной надёжности данных. Такие настройки, в дополнение к указанию, сколько серверов должны получить данные, прежде чем они будут считаться записанными успешно, можно указывать для каждой операции записи, что даёт нам возможность контролировать производительность записи и надёжность данных.
 
-In addition to these performance factors, log data is one of those data sets which can often take advantage of schema-less collections. Finally, MongoDB has something called a [capped collection](http://www.mongodb.org/display/DOCS/Capped+Collections). So far, all of the implicitly created collections we've created are just normal collections. We can create a capped collection by using the `db.createCollection` command and flagging it as capped:
+В довесок к высокой производительности, логирование также выигрывает от бессхемности коллекций. И, в конце концов, у MongoDB есть плюшка под названием [capped collection](http://www.mongodb.org/display/DOCS/Capped+Collections). По умолчанию все коллекции создаются обычными, мы можем сделать их capped, явно указав соответствующий флаг в `db.createCollection`:
 
 	//limit our capped collection to 1 megabyte
 	db.createCollection('logs', {capped: true, size: 1048576})
 
-When our capped collection reaches its 1MB limit, old documents are automatically purged. A limit on the number of documents, rather than the size, can be set using `max`. Capped collections have some interesting properties. For example, you can update a document but it can't grow in size. Also, the insertion order is preserved, so you don't need to add an extra index to get proper time-based sorting.
+Когда наша коллекция дорастёт до 1 мегабайта, старые документы будут автоматически удалены. Можно также установить ограничение на количество документов, а не на объём, для этого есть `max`. У ограниченных коллекций есть ряд интересных свойств. Например, можно обновлять документ, но ему будет нельзя увеличиваться в размерах. Также, нам доступен порядок создания документов, поэтому нам не нужен индекс для сортировки по времени создания
 
-This is a good place to point out that if you want to know whether your write encountered any errors (as opposed to the default fire-and-forget), you simply issue a follow-up command: `db.getLastError()`. Most drivers encapsulate this as a *safe write*, say by specifying `{:safe => true}` as a second parameter to `insert`.
+Не будет лишним сказать, что если вам нужно знать, не случилось ли ошибок при записи (по умолчаниютони не выводятся), вы можете выполнить команду `db.getLastError()`. Многие драйверы добавляют метод для *безопасной записи*, указывая параметр `{:safe => true}` вторым параметром `insert`.
 
-### Durability ###
-Prior to version 1.8, MongoDB didn't have single-server durability. That is, a server crash would likely result in lost data. The solution had always been to run MongoDB in a multi-server setup (MongoDB supports replication). One of the major features added to 1.8 was journaling. To enable it add a new line with `journal=true` to the `mongodb.config` file we created when we first setup MongoDB (and restart your server if you want it enabled right away). You probably want journaling enabled (it'll be a default in a future release). Although, in some circumstances the extra throughput you get from disabling journaling might be a risk you are willing to take. (It's worth pointing out that some types of applications can easily afford to lose data).
+### Надёжность ###
+До версии 1.8 в MongoDB не было обеспечения надёжности для единственного сервера. То есть, при падении сервера данные, скорее всего, терялись. Выходом из этой ситуации был запуск множества серверов (MongoDB умеет репликацию). Важной фишкой, добавленной в 1.8, стало журналирование. Чтобы включить его, добавьте строку `journal=true` в ваш `mongodb.config` который мы создали при установке (и не забудьте перезапустить сервер, чтобы он подхватил изменения). Скорее всего, вы захотите иметь журналирование включенным (в будущих релизах это будет по умолчанию). Однако, в некоторых обстоятельствах отключение журналирования может быть вполне оправданным риском (ведь некоторым приложениям не страшно терять данные).
 
-Durability is only mentioned here because a lot has been made around MongoDB's lack of single-server durability. This'll likely show up in Google searches for some time to come. Information you find about this missing feature is simply out of date.
+Надёжность упоминается здесь лишь для того, чтобы рассказать, как много было сделано для преодоления ненадёжности единственного сервера. Информация о ненадежности, несомненно, ещё не раз попадётся вам на глаза. Просто учтите, что она протухла.
 
-### Full Text Search ###
-True full text search capability is something that'll hopefully come to MongoDB in a future release. With its support for arrays, basic full text search is pretty easy to implement. For something more powerful, you'll need to rely on a solution such as Lucene/Solr. Of course, this is also true of many relational databases.
+### Полнотекстовый поиск ###
+Настоящий полнотекстовый поиск - это то, чего все ждут с надеждою от одного из будущих релизов MongoDB. Однако, благодаря поддержке массивов, простой полнотекстовый поиск можно легко собрать на коленке. Для чего-то более продвинутого придётся использовать сторонние решения, такие как Lucene или Solr. Многие реляционные базы, впрочем, тоже этим грешат.
 
-### Transactions ###
-MongoDB doesn't have transactions. It has two alternatives, one which is great but with limited use, and the other that is a cumbersome but flexible. 
+### Транзакции ###
+Транзакций в MongoDB нет. Но есть целых две альтернативы, одна из которых хороша, но ограничена, а вторая похуже, но более гибкая.
 
-The first is its many atomic operations. These are great, so long as they actually address your problem. We already saw some of the simpler ones, like `$inc` and `$set`. There are also commands like `findAndModify` which can update or delete a document and return it atomically.
+Первая - это наличие нескольких атомарных операций. В большинстве случаев их вполне достаточно. Некоторые из них мы уже видели - это `$inc` и `$set`. Есть ещё команды наподобие `findAndModify`, которые обновляют объекты и тут же их возвращают.
 
-The second, when atomic operations aren't enough, is to fall back to a two-phase commit. A two-phase commit is to transactions what manual dereferencing is to joins. It's a storage-agnostic solution that you do in code.  Two-phase commits are actually quite popular in the relational world as a way to implement transactions across multiple databases. The MongoDB website [has an example](http://www.mongodb.org/display/DOCS/two-phase+commit) illustrating the most common scenario (a transfer of funds). The general idea is that you store the state of the transaction within the actual document being updated and go through the init-pending-commit/rollback steps manually. 
+Вторая используется, когда атомарных операций недостаточно, и называется она "двухфазная запись". Двухфазная запись по отношению к настоящим транзакциям - это как расстановка ссылок вручную по отношению к джойнам. На сайте MongoDB [есть пример](http://www.mongodb.org/display/DOCS/two-phase+commit), иллюстрирующий довольно распространённый сценарий (перевод денег). Основная идея в том, что мы храним в документе состояние транзакции и выполняем начало-ожидание-подтверждение/откат ручками.
 
-MongoDB's support for nested documents and schema-less design makes two-phase commits slightly less painful, but it still isn't a great process, especially when you are just getting started with it. 
+Поддержка вложенных документов и бессхемный дизайн делают двухфазную запись менее болезненной, но это всё равно не верх приятности, особенно для тех, кто впервые с этим сталкивается.
 
-### Data Processing ###
-MongoDB relies on MapReduce for most data processing jobs. It has some [basic aggregation](http://www.mongodb.org/display/DOCS/Aggregation) capabilities, but for anything serious, you'll want to use MapReduce. In the next chapter we'll look at MapReduce in detail. For now you can think of it as a very powerful and different way to `group by` (which is an understatement). One of MapReduce's strengths is that it can be parallelized for working with large sets of data. However, MongoDB's implementation relies on JavaScript which is single-threaded. The point? For processing of large data, you'll likely need to rely on something else, such as Hadoop. Thankfully, since the two systems really do complement each other, there's a [MongoDB adapter for Hadoop](https://github.com/mongodb/mongo-hadoop).
+### Обработка данных ###
+Для большинства задач обработки данных MongoDB использует MapReduce. [Кое-что](http://www.mongodb.org/display/DOCS/Aggregation) она умеет "из коробки", но для чего-то серьёзного без MapReduce не обойтись. В следующей главе мы рассмотрим MapReduce поближе. Пока же просто думайте об этом как о мощном и слегка необычном способе выполнить `group by`. Одной из сильных сторон MapReduce является его умение распараллеливать обработку больших объёмов данных. Однако сама MongoDB работает в основном на JavaScript, который однопоточен. Выход? Для обработки больших наборов нужно обратиться к чему-то другому, например, к Hadoop. Благодаря тому, что системы задуманы как дополняющие друг друга, у нас есть [адаптер MongoDB-Hadoop](https://github.com/mongodb/mongo-hadoop).
 
-Of course, parallelizing data processing isn't something relational databases excel at either. There are plans for future versions of MongoDB to be better at handling very large sets of data.
+Разумеется, параллельная обработка данных не является сильной стороной и большинства реляционных СУБД. В планах на будущие релизы MongoDB есть и улучшение работы с большими наборами данных.
 
 ### Geospatial ###
-A particularly powerful feature of MongoDB is its support for geospatial indexes. This allows you to store x and y coordinates within documents and then find documents that are `$near` a set of coordinates or `$within` a box or circle. This is a feature best explained via some visual aids, so I invite you to try the [5 minute geospatial interactive tutorial](http://tutorial.mongly.com/geo/index), if you want to learn more.
+Особенно мощная штука, имеющаяся в MongoDB - это поддержка гео-индексов. Они позволяют нам хранить координаты (x и y) в документе, а потом искать то, что рядом (`$near`) с нужными нам координатами или внутри (`$within`) определенного круга или квадрата. Это всё лучше объяснять наглядно, поэтому я приглашаю вас посетить [5 minute geospatial interactive tutorial](http://tutorial.mongly.com/geo/index), если вас эта тема заинтересовала.
 
-### Tools and Maturity ###
-You probably already know the answer to this, but MongoDB is obviously younger than most relational database systems. This is absolutely something you should consider. How much a factor it plays depends on what you are doing and how you are doing it. Nevertheless, an honest assessment simply can't ignore the fact that MongoDB is younger and the available tooling around isn't great (although the tooling around a lot of very mature relational databases is pretty horrible too!). As an example, the lack of support for base-10 floating point numbers will obviously be a concern (though not necessarily a show-stopper) for systems dealing with money.
+### Инструменты и зрелость ###
+Возможно, вы и так уже всё знаете: MongoDB значительно моложе большинства реляционных СУБД. Это нельзя отрицать. Насколько это важно - зависит от того, что вы делаете и как вы это делаете. Но, по-хорошему, нельзя игнорировать то, что MongoDB весьма молода, и инструментов для неё пока немного (впрочем, у некоторых зрелых СУРБД дела обстоят не лучше). Например, отсутствие поддержки десятичных чисел с плавающей точкой может стать проблемой (не факт, что непреодолимой), когда системе надо работать с деньгами.
 
 On the positive side, drivers exist for a great many languages, the protocol is modern and simple, and development is happening at blinding speeds. MongoDB is in production at enough companies that concerns about maturity, while valid, are quickly becoming a thing of the past.
 
-### In This Chapter ###
+С другой стороны, существуют драйверы для очень многих языков, протокол соверменен и прост, а разработка ведётся с космической скоростью. НИПАНИМАТ Я ВАШ АНГЛИЙСКИЙ, ПЕРЕВЕДИТЕ КТО-НИБУДЬ ЭТУ ФРАЗУ, А?
+
+### В этой главе ###
 The message from this chapter is that MongoDB, in most cases, can replace a relational database. It's much simpler and straightforward; it's faster and generally imposes fewer restrictions on application developers. The lack of transactions can be a legitimate and serious concern. However, when people ask *where does MongoDB sit with respect to the new data storage landscape?* the answer is simple: **right in the middle**.
+
+Эта глава стремится донести мысль о том, что MongoDB в большинстве случаев может заменить реляционные базы данных. Она более проста и прямолинейна, она быстрее и накладывает меньше ограничений на разработчиков. Отсутствие транзакций может оказаться серьёзноым недостатком. Однако, когда кто-либо спрашивает: *"где находится MongoDB в современном мире хранения данных?"*, ответ будет прост: **"точно посередине"**.
 
 \clearpage
 
