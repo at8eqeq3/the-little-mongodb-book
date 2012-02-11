@@ -1,0 +1,19 @@
+#!/bin/sh
+paper=a4paper
+hmargin=3cm
+vmargin=3cm
+fontsize=11pt
+
+mainfont="Droid Serif"
+sansfont="Droid Sans"
+monofont="Droid Sans Mono"
+columns=onecolumn
+geometry=portrait
+nohyphenation=true
+
+
+markdown2pdf --xetex --template=template/xetex.template \
+-V paper=$paper -V hmargin=$hmargin -V vmargin=$vmargin -V language:russian \
+-V mainfont="$mainfont" -V sansfont="$sansfont" -V monofont="$monofont" \
+-V geometry=$geometry -V columns=$columns -V fontsize=$fontsize \
+-V nohyphenation=$nohyphenation --listings ru/mongodb.markdown -o ru/mongodb.pdf
